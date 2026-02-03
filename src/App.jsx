@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "./App.css";
 
 function App() {
-  // State values for inputs and data
+  // --- YOUR LOGIC STARTS HERE (Unchanged) ---
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -13,55 +13,47 @@ function App() {
   });
   const [filter, setFilter] = useState("all");
 
-  // Save transactions to localStorage
   useEffect(() => {
     localStorage.setItem("transactions", JSON.stringify(transactions));
   }, [transactions]);
 
-  // Add a new transaction
   function handleSubmit(e) {
     e.preventDefault();
     if (!description || !amount || !category) return;
-
     const newTransaction = {
       id: Date.now(),
       description,
       amount: Number(amount),
       category,
     };
-
     setTransactions((prev) => [...prev, newTransaction]);
     setDescription("");
     setAmount("");
     setCategory("");
   }
 
-  // Delete a transaction
   function deleteTransaction(id) {
     setTransactions((prev) => prev.filter((tx) => tx.id !== id));
   }
 
-  // Calculate income, expenses, and balance
   const amounts = transactions.map((tx) => tx.amount);
   const income = amounts.filter((amt) => amt > 0).reduce((acc, amt) => acc + amt, 0);
   const expenses = amounts.filter((amt) => amt < 0).reduce((acc, amt) => acc + amt, 0);
   const balance = income + expenses;
+  const remainingBudget = budget + expenses; // Logic assuming expenses are negative numbers
 
-  // Filter transactions by type
   const filteredTransactions = transactions.filter((tx) => {
     if (filter === "income") return tx.amount > 0;
     if (filter === "expenses") return tx.amount < 0;
     return true;
   });
 
-  // Calculate totals per category
   const categoryTotals = transactions.reduce((acc, tx) => {
     if (!tx.category) return acc;
     acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
     return acc;
   }, {});
 
-  // Calculate monthly summaries
   const monthlySummaries = transactions.reduce((acc, tx) => {
     const month = new Date(tx.id).toLocaleString("default", { month: "long", year: "numeric" });
     if (!acc[month]) {
@@ -74,162 +66,144 @@ function App() {
     }
     return acc;
   }, {});
+  // --- YOUR LOGIC ENDS HERE ---
 
-  // Calculate remaining budget
-  const remainingBudget = budget + expenses;
-
-  // Render the UI
   return (
-    <main>
-      <header>
-        <h1>Bad Financial Habits Tracker</h1>
+    <div className="app">
+      <header className="header">
+        <h1>Bad Financial Habits</h1>
       </header>
 
-      {/* Balance Section */}
-      <section>
-        <h2>Balance</h2>
-        <p style={{ fontSize: "1.8rem", fontWeight: "700" }}>
-          ₱{balance.toFixed(2)}
-        </p>
-        <div style={{ display: "flex", justifyContent: "space-between", maxWidth: "320px" }}>
-          <div>
-            <h3>Income</h3>
-            <p style={{ color: "limegreen", fontWeight: "700" }}>
-              ₱{income.toFixed(2)}
-            </p>
-          </div>
-          <div>
-            <h3>Expenses</h3>
-            <p style={{ color: "tomato", fontWeight: "700" }}>
-              ₱{Math.abs(expenses).toFixed(2)}
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* 1. FINANCIAL OVERVIEW & BUDGET */}
+      <section className="overview">
+        <h2 style={{ textAlign: "center" }}>Net Position</h2>
+        <div className="balance">₱{balance.toLocaleString()}</div>
 
-      {/* Budget Section */}
-        <section>
-          <h2>Set Budget</h2>
+        <div className="summary">
+          <div className="income">IN: +₱{income.toLocaleString()}</div>
+          <div className="expenses">OUT: -₱{Math.abs(expenses).toLocaleString()}</div>
+        </div>
+
+        {/* Budget Feature Restored */}
+        <div className="budget-section">
+          <label style={{ fontSize: "0.8rem", color: "#94a3b8", display: "block", marginBottom: "5px" }}>
+            MONTHLY BUDGET LIMIT
+          </label>
           <input
-            type="text" 
-            placeholder="Enter your budget"
+            type="text"
+            placeholder="Set Budget..."
             value={budget}
             onChange={(e) => {
               const val = e.target.value;
-              if (/^\d*$/.test(val)) {
-                setBudget(Number(val));
-              }
+              if (/^\d*$/.test(val)) setBudget(Number(val));
             }}
+            style={{ textAlign: "center", width: "150px", marginBottom: "10px" }}
           />
-        </section>
-
-
-      <section>
-        <h2>Remaining Budget</h2>
-        <p style={{
-          fontSize: "1.5rem",
-          fontWeight: "700",
-          color: remainingBudget < 0 ? "tomato" : "limegreen"
-        }}>
-          ₱{remainingBudget.toFixed(2)}
-        </p>
-      </section>
-
-      {/* Monthly Summaries Section */}
-      <section>
-        <h2>Monthly Summaries</h2>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
-          {Object.entries(monthlySummaries).map(([month, data]) => {
-            const monthlyBalance = data.income + data.expenses;
-            return (
-              <div
-                key={month}
-                style={{
-                  border: "2px solid #ff00ff",
-                  padding: "1rem",
-                  borderRadius: "8px",
-                  minWidth: "180px",
-                  textAlign: "center",
-                  boxShadow: "0 0 12px #ff00ff",
-                }}
-              >
-                <h3>{month}</h3>
-                <p style={{ color: "limegreen" }}>Income: ₱{data.income.toFixed(2)}</p>
-                <p style={{ color: "tomato" }}>Expenses: ₱{Math.abs(data.expenses).toFixed(2)}</p>
-                <p style={{ fontWeight: "700" }}>Balance: ₱{monthlyBalance.toFixed(2)}</p>
-              </div>
-            );
-          })}
+          <div style={{ fontSize: "0.9rem" }}>
+            Remaining:{" "}
+            <span className={remainingBudget < 0 ? "remaining-negative" : "remaining-positive"}>
+              ₱{remainingBudget.toLocaleString()}
+            </span>
+          </div>
         </div>
       </section>
 
-      {/* Add Transaction Section */}
+      {/* 2. ADD TRANSACTION */}
       <section>
-        <h2>Add Transaction</h2>
+        <h2>New Entry</h2>
         <form onSubmit={handleSubmit}>
           <input
             type="text"
-            placeholder="Description"
+            placeholder="Description (e.g. Coffee)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
           <input
             type="number"
-            placeholder="Amount (use negative for expenses)"
+            placeholder="Amount (-500)"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
           <input
             type="text"
-            placeholder="Category (e.g. Food, Transport)"
+            placeholder="Category"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
+            style={{ flex: 0.5 }}
           />
-          <button type="submit">Add</button>
+          <button type="submit">ADD</button>
         </form>
       </section>
 
-      {/* Transactions Section */}
+      {/* 3. MONTHLY SUMMARIES (Restored) */}
       <section>
-        <h2>Transactions</h2>
-        <div style={{ marginBottom: "1rem" }}>
-          <button onClick={() => setFilter("all")} style={{ fontWeight: filter === "all" ? "700" : "normal" }}>All</button>
-          <button onClick={() => setFilter("income")} style={{ color: "limegreen", fontWeight: filter === "income" ? "700" : "normal", marginLeft: "1rem" }}>Income</button>
-          <button onClick={() => setFilter("expenses")} style={{ color: "tomato", fontWeight: filter === "expenses" ? "700" : "normal", marginLeft: "1rem" }}>Expenses</button>
+        <h2>Monthly Logs</h2>
+        <div className="cards">
+          {Object.entries(monthlySummaries).map(([month, data]) => {
+            const monthlyBalance = data.income + data.expenses;
+            return (
+              <div className="card" key={month}>
+                <h3>{month}</h3>
+                <div style={{ fontSize: "0.85rem", display: "flex", flexDirection: "column", gap: "5px" }}>
+                  <span className="income">In: ₱{data.income.toLocaleString()}</span>
+                  <span className="expenses">Out: ₱{Math.abs(data.expenses).toLocaleString()}</span>
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: "5px", paddingTop: "5px" }}>
+                    Net: ₱{monthlyBalance.toLocaleString()}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          {Object.keys(monthlySummaries).length === 0 && (
+             <p style={{color: '#666', fontStyle:'italic'}}>No monthly data available.</p>
+          )}
         </div>
+      </section>
+
+      {/* 4. TRANSACTION HISTORY */}
+      <section className="transactions-section">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <h2>History</h2>
+          <div className="filters">
+            <button onClick={() => setFilter("all")} className={filter === "all" ? "active" : ""}>ALL</button>
+            <button onClick={() => setFilter("income")} className={filter === "income" ? "active" : ""}>IN</button>
+            <button onClick={() => setFilter("expenses")} className={filter === "expenses" ? "active" : ""}>OUT</button>
+          </div>
+        </div>
+
         <ul>
           {filteredTransactions.map((tx) => (
             <li key={tx.id}>
-              {tx.description} — ₱{tx.amount} ({tx.category})
-              <button onClick={() => deleteTransaction(tx.id)}>Delete</button>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: "1rem" }}>{tx.description}</span>
+                <span style={{ fontSize: "0.8rem", color: "#64748b" }}>{tx.category}</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+                <span className={tx.amount < 0 ? "expenses" : "income"} style={{ fontFamily: "monospace", fontSize: "1.1rem" }}>
+                  {tx.amount < 0 ? "" : "+"}₱{Math.abs(tx.amount).toLocaleString()}
+                </span>
+                <button className="delete-btn" onClick={() => deleteTransaction(tx.id)}>DEL</button>
+              </div>
             </li>
           ))}
         </ul>
       </section>
 
-      {/* Category Breakdown Section */}
+      {/* 5. CATEGORY BREAKDOWN (Restored) */}
       <section>
-        <h2>Category Breakdown</h2>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+        <h2>Category Analysis</h2>
+        <div className="cards">
           {Object.entries(categoryTotals).map(([cat, total]) => (
-            <div
-              key={cat}
-              style={{
-                border: "2px solid #00ffcc",
-                padding: "1rem",
-                borderRadius: "8px",
-                minWidth: "120px",
-                textAlign: "center",
-                boxShadow: "0 0 10px #00ffcc",
-              }}
-            >
+            <div className="card" key={cat}>
               <h3>{cat}</h3>
-              <p>₱{total.toFixed(2)}</p>
+              <span className={total < 0 ? "expenses" : "income"} style={{ fontSize: "1.2rem", fontWeight: "bold" }}>
+                ₱{Math.abs(total).toLocaleString()}
+              </span>
             </div>
           ))}
         </div>
       </section>
-    </main>
+    </div>
   );
 }
 
